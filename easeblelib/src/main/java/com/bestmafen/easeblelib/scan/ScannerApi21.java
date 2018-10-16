@@ -19,8 +19,6 @@ import java.util.List;
  */
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 class ScannerApi21 extends AbsScanner {
-    private static final String TAG = "ScannerApi18";
-
     private ScanCallback mScanCallback;
     private ScanSettings.Builder mScanSettingsBuilder = new ScanSettings.Builder();
 
@@ -65,12 +63,12 @@ class ScannerApi21 extends AbsScanner {
                     break;
             }
             scanner.startScan(null, mScanSettingsBuilder.build(), mScanCallback);
-            mHandler.postDelayed(mStopScanRunnable, mScanOption.mPeriod);
+            mHandler.postDelayed(mStopScanningRunnable, mScanOption.mPeriod);
         } else {
             if (scanner != null) {
                 scanner.stopScan(mScanCallback);
             }
-            mHandler.removeCallbacks(mStopScanRunnable);
+            mHandler.removeCallbacks(mStopScanningRunnable);
         }
 
         LogUtils.vTag(TAG, "ScannerApi21 " + hashCode() + " -> scan " + scan);
@@ -91,40 +89,19 @@ class ScannerApi21 extends AbsScanner {
 
             if (result == null) return;
 
-            final BluetoothDevice device = result.getDevice();
+            BluetoothDevice device = result.getDevice();
             if (device == null) return;
 
-            final String name = device.getName();
-            final String address = device.getAddress();
+            String name = device.getName();
+            String address = device.getAddress();
             if (TextUtils.isEmpty(name) || TextUtils.isEmpty(address)) return;
 
-            LogUtils.vTag(TAG, "ScannerApi21 onScanResult -> name=" + name + ", address=" + address);
-            final int rssi = result.getRssi();
-            final byte[] scanRecord = result.getScanRecord() == null ?
-                    new byte[0] : result.getScanRecord().getBytes();
-
-            mHandler.post(new Runnable() {
-
-                @Override
-                public void run() {
-                    if (mScanOption.mNames.size() > 0 && !mScanOption.mNames.contains(name))
-                        return;
-
-                    if (mScanOption.mAddresses.size() > 0 && !mScanOption.mAddresses.contains(address))
-                        return;
-
-                    if (rssi < mScanOption.mMinRssi) return;
-
-                    EaseDevice easeDevice = new EaseDevice(device, rssi, scanRecord);
-                    if (mDevices.contains(easeDevice)) {
-                        mDevices.set(mDevices.indexOf(easeDevice), easeDevice);
-                    } else {
-                        mDevices.add(easeDevice);
-                    }
-                    mEaseScanCallback.onDeviceFound(easeDevice);
-                    LogUtils.dTag(TAG, "ScannerApi21 onScanResult -> " + easeDevice.toString());
-                }
-            });
+            LogUtils.vTag(TAG, "ScannerApi21 onScanResult -> name=" + name + ", address=" + address + ", rssi=" + result.getRssi());
+            byte[] scanRecord = null;
+            if (result.getScanRecord() != null) {
+                scanRecord = result.getScanRecord().getBytes();
+            }
+            whenDeviceScanned(new EaseDevice(device, result.getRssi(), scanRecord));
         }
 
         @Override

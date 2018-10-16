@@ -14,11 +14,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class SmaData {
-    public static final int ENDIAN_BIG    = 0;
-    public static final int ENDIAN_LITTLE = 1;
+public abstract class EaseData {
+    public static final int BIG    = 0;
+    public static final int LITTLE = 1;
 
-    @IntDef({ENDIAN_BIG, ENDIAN_LITTLE})
+    @IntDef({BIG, LITTLE})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Endian {
 
@@ -143,7 +143,7 @@ public abstract class SmaData {
     public short readInt16(@Endian int endian) {
         byte byte1 = readInt8();
         byte byte2 = readInt8();
-        if (endian == ENDIAN_BIG) {
+        if (endian == BIG) {
             return (short) ((byte1 << 8) | (byte2 & 0xff));
         } else {
             return (short) ((byte2 << 8) | (byte1 & 0xff));
@@ -154,7 +154,7 @@ public abstract class SmaData {
      * 大端序读取数据源的下16位，解析成带符号int16
      */
     public short readInt16() {
-        return readInt16(ENDIAN_BIG);
+        return readInt16(BIG);
     }
 
     /**
@@ -170,21 +170,21 @@ public abstract class SmaData {
      * 大端序读取数据源的下64位，解析成带符号int64
      */
     public long readInt64() {
-        return readInt64(ENDIAN_BIG);
+        return readInt64(BIG);
     }
 
     public long readInt64(@Endian int endian) {
-        if (endian == ENDIAN_BIG) {
+        if (endian == BIG) {
             short short1 = readInt16();
             short short2 = readInt16();
             short short3 = readInt16();
             short short4 = readInt16();
             return ((long) short1 << 48) | (((long) short2 & 0xffff) << 32) | (((long) short3 & 0xffff) << 16) | (short4 & 0xffff);
         } else {
-            short short1 = readInt16(ENDIAN_LITTLE);
-            short short2 = readInt16(ENDIAN_LITTLE);
-            short short3 = readInt16(ENDIAN_LITTLE);
-            short short4 = readInt16(ENDIAN_LITTLE);
+            short short1 = readInt16(LITTLE);
+            short short2 = readInt16(LITTLE);
+            short short3 = readInt16(LITTLE);
+            short short4 = readInt16(LITTLE);
             return ((long) short4 << 48) | (((long) short3 & 0xffff) << 32) | (((long) short2 & 0xffff) << 16) | (short1 & 0xffff);
         }
     }
@@ -207,7 +207,7 @@ public abstract class SmaData {
     }
 
     public char readUint16(@Endian int endian) {
-        if (endian == ENDIAN_BIG) {
+        if (endian == BIG) {
             return (char) (readInt16() & 0xffff);
         } else {
             byte byte1 = readInt8();
@@ -220,7 +220,7 @@ public abstract class SmaData {
      * 读取数据源的下16位，解析成无符号int16
      */
     public char readUint16() {
-        return readUint16(ENDIAN_BIG);
+        return readUint16(BIG);
     }
 
     /**
@@ -236,13 +236,13 @@ public abstract class SmaData {
      * 读取数据源的下32位，解析成无符号int32
      */
     public long readUint32(@Endian int endian) {
-        if (endian == ENDIAN_BIG) {
+        if (endian == BIG) {
             char char1 = readUint16();
             char char2 = readUint16();
             return (((long) char1 & 0xffff) << 16) | (char2 & 0xffff);
         } else {
-            char char1 = readUint16(ENDIAN_LITTLE);
-            char char2 = readUint16(ENDIAN_LITTLE);
+            char char1 = readUint16(LITTLE);
+            char char2 = readUint16(LITTLE);
             return (((long) char2 & 0xffff) << 16) | (char1 & 0xffff);
         }
     }
@@ -251,7 +251,7 @@ public abstract class SmaData {
      * 读取数据源的下32位，解析成无符号int32
      */
     public long readUint32() {
-        return readUint32(ENDIAN_BIG);
+        return readUint32(BIG);
     }
 
     /**
@@ -291,22 +291,20 @@ public abstract class SmaData {
         }
     }
 
-    public <T extends SmaData> T readBuffer(Class<T> t) {
+    public <T extends EaseData> T readBuffer(Class<T> t) {
         T item = null;
         try {
             item = t.newInstance();
             int len = item.size();
             item.encode(readByteArray(len));
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return item;
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends SmaData> T[] readBufferList(Class<T> t, int count) {
+    public <T extends EaseData> T[] readBufferList(Class<T> t, int count) {
         T[] buffers = (T[]) Array.newInstance(t, count);
         for (int i = 0; i < count; i++) {
             buffers[i] = readBuffer(t);
@@ -314,19 +312,17 @@ public abstract class SmaData {
         return buffers;
     }
 
-    public static <T extends SmaData> T encodeItem(byte[] bytes, Class<T> t) {
+    public static <T extends EaseData> T encodeItem(byte[] bytes, Class<T> t) {
         try {
             T item = t.newInstance();
             item.encode(bytes);
             return item;
-        } catch (InstantiationException e) {
-            return null;
-        } catch (IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             return null;
         }
     }
 
-    public static <T extends SmaData> List<T> encodeList(byte[] bytes, Class<T> t) {
+    public static <T extends EaseData> List<T> encodeList(byte[] bytes, Class<T> t) {
         try {
             T item = t.newInstance();
             int size = item.size();
@@ -385,11 +381,11 @@ public abstract class SmaData {
      */
     public void writeInt16(int value, @Endian int endian) {
         switch (endian) {
-            case ENDIAN_BIG:
+            case BIG:
                 writeInt8((value >> 8) & 0xff);
                 writeInt8(value & 0xff);
                 break;
-            case ENDIAN_LITTLE:
+            case LITTLE:
                 writeInt8(value & 0xff);
                 writeInt8((value >> 8) & 0xff);
                 break;
@@ -402,7 +398,7 @@ public abstract class SmaData {
      * @param value 待写入的值
      */
     public void writeInt16(int value) {
-        writeInt16(value, ENDIAN_BIG);
+        writeInt16(value, BIG);
     }
 
     /**
@@ -413,13 +409,13 @@ public abstract class SmaData {
      */
     public void writeInt32(int value, @Endian int endian) {
         switch (endian) {
-            case ENDIAN_BIG:
+            case BIG:
                 writeInt8((value >> 24) & 0xff);
                 writeInt8((value >> 16) & 0xff);
                 writeInt8((value >> 8) & 0xff);
                 writeInt8(value & 0xff);
                 break;
-            case ENDIAN_LITTLE:
+            case LITTLE:
                 writeInt8(value & 0xff);
                 writeInt8((value >> 16) & 0xff);
                 writeInt8((value >> 24) & 0xff);
@@ -429,7 +425,7 @@ public abstract class SmaData {
     }
 
     public void writeInt32(int value) {
-        writeInt32(value, ENDIAN_BIG);
+        writeInt32(value, BIG);
     }
 
     /**
@@ -441,13 +437,13 @@ public abstract class SmaData {
     public void writeUint32(long value, @Endian int endian) {
         int intValue = (int) (value);
         switch (endian) {
-            case ENDIAN_BIG:
+            case BIG:
                 writeInt8((intValue >> 24) & 0xff);
                 writeInt8((intValue >> 16) & 0xff);
                 writeInt8((intValue >> 8) & 0xff);
                 writeInt8(intValue & 0xff);
                 break;
-            case ENDIAN_LITTLE:
+            case LITTLE:
                 writeInt8(intValue & 0xff);
                 writeInt8((intValue >> 16) & 0xff);
                 writeInt8((intValue >> 24) & 0xff);
@@ -457,7 +453,7 @@ public abstract class SmaData {
     }
 
     public void writeUint32(long value) {
-        writeUint32(value, ENDIAN_BIG);
+        writeUint32(value, BIG);
     }
 
     /**
@@ -468,7 +464,7 @@ public abstract class SmaData {
      */
     public void writeInt64(long value, @Endian int endian) {
         switch (endian) {
-            case ENDIAN_BIG:
+            case BIG:
                 writeInt8((int) ((value >> 56) & 0xff));
                 writeInt8((int) ((value >> 48) & 0xff));
                 writeInt8((int) ((value >> 40) & 0xff));
@@ -478,7 +474,7 @@ public abstract class SmaData {
                 writeInt8((int) ((value >> 8) & 0xff));
                 writeInt8((int) (value & 0xff));
                 break;
-            case ENDIAN_LITTLE:
+            case LITTLE:
                 writeInt8((int) (value & 0xff));
                 writeInt8((int) ((value >> 16) & 0xff));
                 writeInt8((int) ((value >> 24) & 0xff));
@@ -501,12 +497,12 @@ public abstract class SmaData {
         if (bytes == null || bytes.length == 0) return;
 
         switch (endian) {
-            case ENDIAN_BIG:
+            case BIG:
                 for (byte item : bytes) {
                     writeInt8(item);
                 }
                 break;
-            case ENDIAN_LITTLE:
+            case LITTLE:
                 for (int i = 0, l = bytes.length; i < l; i++) {
                     writeInt8(bytes[l - 1 - i]);
                 }
@@ -520,7 +516,7 @@ public abstract class SmaData {
      * @param bytes 待写入的byte数组
      */
     public void writeByteArray(byte[] bytes) {
-        writeByteArray(bytes, ENDIAN_BIG);
+        writeByteArray(bytes, BIG);
     }
 
     /**

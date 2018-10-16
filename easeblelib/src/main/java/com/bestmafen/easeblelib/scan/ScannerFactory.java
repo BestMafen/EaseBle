@@ -3,7 +3,7 @@ package com.bestmafen.easeblelib.scan;
 import android.os.Build;
 
 /**
- * This class is used to create a {@link AbsScanner} object according to different API level.
+ * This class is used to create a {@link AbsScanner} object at different API levels.
  */
 public class ScannerFactory {
 

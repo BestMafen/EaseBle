@@ -9,7 +9,7 @@ import android.text.TextUtils;
 import com.bestmafen.easeblelib.util.EaseUtils;
 
 /**
- * The class wraps a {@link BluetoothDevice}.
+ * The class is used to wrap a {@link BluetoothDevice}.
  */
 public class EaseDevice implements Parcelable {
     private BluetoothDevice mDevice;
@@ -30,11 +30,7 @@ public class EaseDevice implements Parcelable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-
-        if (o == null) return false;
-
-        return o instanceof EaseDevice && mDevice.equals(((EaseDevice) o).mDevice);
+        return this == o || (o instanceof EaseDevice && mDevice.equals(((EaseDevice) o).mDevice));
     }
 
     @Override

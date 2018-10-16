@@ -102,6 +102,9 @@ public class ScanOption {
         return this;
     }
 
+    /**
+     * Effected API>=21
+     */
     public ScanOption withScanMode(@ScanMode int scanMode) {
         mScanMode = scanMode;
         return this;

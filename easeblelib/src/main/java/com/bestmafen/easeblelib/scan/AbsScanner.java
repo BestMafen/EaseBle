@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.bestmafen.easeblelib.entity.EaseDevice;
+import com.blankj.utilcode.util.LogUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,26 +19,26 @@ import java.util.List;
  * implementations on different API levels,see {@link ScannerApi21} and {@link ScannerApi18}.
  */
 public abstract class AbsScanner {
+    static final String TAG = "AbsScanner";
+
     static BluetoothAdapter sBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+    /**
+     * Handler to dispatch callback event on the main thread.
+     */
     Handler mHandler = new Handler(Looper.getMainLooper());
 
     ScanOption       mScanOption;
     EaseScanCallback mEaseScanCallback;
 
-    /**
-     * Scanning results
-     */
     List<EaseDevice> mDevices = new ArrayList<>();
 
-    /**
-     * Whether is scanning.
-     */
     boolean isScanning = false;
 
     /**
      * The runnable to stop scanning.
      */
-    Runnable mStopScanRunnable = new Runnable() {
+    Runnable mStopScanningRunnable = new Runnable() {
 
         @Override
         public void run() {
@@ -52,8 +53,18 @@ public abstract class AbsScanner {
      */
     public abstract void scan(boolean scan);
 
+    public AbsScanner setScanOption(ScanOption option) {
+        mScanOption = option;
+        return this;
+    }
+
+    public AbsScanner setEaseScanCallback(EaseScanCallback easeScanCallback) {
+        mEaseScanCallback = easeScanCallback;
+        return this;
+    }
+
     public boolean isScanning() {
-        return isScanning;
+        return sBluetoothAdapter.isEnabled() && isScanning;
     }
 
     /**
@@ -64,13 +75,24 @@ public abstract class AbsScanner {
         mEaseScanCallback = null;
     }
 
-    public AbsScanner setScanOption(ScanOption option) {
-        mScanOption = option;
-        return this;
-    }
+    void whenDeviceScanned(final EaseDevice easeDevice) {
+        mHandler.post(new Runnable() {
 
-    public AbsScanner setEaseScanCallback(EaseScanCallback easeScanCallback) {
-        mEaseScanCallback = easeScanCallback;
-        return this;
+            @Override
+            public void run() {
+                if (!mScanOption.mNames.isEmpty() && !mScanOption.mNames.contains(easeDevice.getDevice().getName()))
+                    return;
+
+                if (!mScanOption.mAddresses.isEmpty() && !mScanOption.mAddresses.contains(easeDevice.getDevice().getAddress()))
+                    return;
+
+                if (easeDevice.getRssi() < mScanOption.mMinRssi) return;
+
+                if (mDevices.contains(easeDevice)) return;
+
+                mDevices.add(easeDevice);
+                mEaseScanCallback.onDeviceFound(easeDevice);
+            }
+        });
     }
 }
